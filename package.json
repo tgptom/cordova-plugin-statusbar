@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-statusbar",
-  "version": "4.0.1-dev",
+  "version": "4.0.1",
   "description": "Cordova StatusBar Plugin",
   "types": "./types/index.d.ts",
   "cordova": {
@@ -10,8 +10,8 @@
       "ios"
     ]
   },
-  "repository": "github:apache/cordova-plugin-statusbar",
-  "bugs": "https://github.com/apache/cordova-plugin-statusbar/issues",
+  "repository": "github:tgptom/cordova-plugin-statusbar",
+  "bugs": "https://github.com/tgptom/cordova-plugin-statusbar/issues",
   "keywords": [
     "cordova",
     "statusbar",
