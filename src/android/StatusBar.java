@@ -230,14 +230,14 @@ public class StatusBar extends CordovaPlugin {
                 LOG.e(TAG, "Invalid style, must be either 'default' or 'lightcontent'");
             }
         }
+    }
 
-        private boolean isSystemBarPluginAvailable() {
-            try {
-                Class.forName("org.apache.cordova.SystemBarPlugin");
-                return true;
-            } catch (ClassNotFoundException ignore) {
-                return false;
-            }
+    private boolean isSystemBarPluginAvailable() {
+        try {
+            Class.forName("org.apache.cordova.SystemBarPlugin");
+            return true;
+        } catch (ClassNotFoundException ignore) {
+            return false;
         }
     }
 }
