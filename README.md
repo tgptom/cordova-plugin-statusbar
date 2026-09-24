@@ -102,6 +102,8 @@ if (cordova.platformId == 'android') {
 }
 ```
 
+On newer `cordova-android` versions that provide built-in system bar handling, `StatusBar.overlaysWebView(...)` may be ignored on Android to avoid conflicting with platform-managed window inset behavior.
+
 Hiding at startup
 -----------
 

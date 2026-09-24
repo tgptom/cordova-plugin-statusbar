@@ -27,6 +27,7 @@ import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import org.apache.cordova.CallbackContext;
@@ -54,6 +55,7 @@ public class StatusBar extends CordovaPlugin {
 
     private AppCompatActivity activity;
     private Window window;
+    private boolean shouldAvoidLegacyOverlayApi;
 
     /**
      * Sets the context of the Command. This can then be used to do things like
@@ -69,14 +71,19 @@ public class StatusBar extends CordovaPlugin {
 
         activity = this.cordova.getActivity();
         window = activity.getWindow();
+        shouldAvoidLegacyOverlayApi = isSystemBarPluginAvailable();
 
         activity.runOnUiThread(() -> {
-            // Clear flag FLAG_FORCE_NOT_FULLSCREEN which is set initially
-            // by the Cordova.
-            window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            if (!shouldAvoidLegacyOverlayApi) {
+                // Clear flag FLAG_FORCE_NOT_FULLSCREEN which is set initially
+                // by the Cordova.
+                window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            }
 
             // Read 'StatusBarOverlaysWebView' from config.xml, default is true.
-            setStatusBarTransparent(preferences.getBoolean("StatusBarOverlaysWebView", true));
+            if (!shouldAvoidLegacyOverlayApi) {
+                setStatusBarTransparent(preferences.getBoolean("StatusBarOverlaysWebView", true));
+            }
 
             // Read 'StatusBarBackgroundColor' from config.xml, default is #000000.
             setStatusBarBackgroundColor(preferences.getString("StatusBarBackgroundColor", "#000000"));
@@ -108,29 +115,39 @@ public class StatusBar extends CordovaPlugin {
 
             case ACTION_SHOW:
                 activity.runOnUiThread(() -> {
-                    int uiOptions = window.getDecorView().getSystemUiVisibility();
-                    uiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-                    uiOptions &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
+                    if (shouldAvoidLegacyOverlayApi) {
+                        WindowInsetsControllerCompat controllerCompat = WindowCompat.getInsetsController(window, window.getDecorView());
+                        controllerCompat.show(WindowInsetsCompat.Type.statusBars());
+                    } else {
+                        int uiOptions = window.getDecorView().getSystemUiVisibility();
+                        uiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+                        uiOptions &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
 
-                    window.getDecorView().setSystemUiVisibility(uiOptions);
+                        window.getDecorView().setSystemUiVisibility(uiOptions);
 
-                    // CB-11197 We still need to update LayoutParams to force status bar
-                    // to be hidden when entering e.g. text fields
-                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                        // CB-11197 We still need to update LayoutParams to force status bar
+                        // to be hidden when entering e.g. text fields
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    }
                 });
                 return true;
 
             case ACTION_HIDE:
                 activity.runOnUiThread(() -> {
-                    int uiOptions = window.getDecorView().getSystemUiVisibility()
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN;
+                    if (shouldAvoidLegacyOverlayApi) {
+                        WindowInsetsControllerCompat controllerCompat = WindowCompat.getInsetsController(window, window.getDecorView());
+                        controllerCompat.hide(WindowInsetsCompat.Type.statusBars());
+                    } else {
+                        int uiOptions = window.getDecorView().getSystemUiVisibility()
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN;
 
-                    window.getDecorView().setSystemUiVisibility(uiOptions);
+                        window.getDecorView().setSystemUiVisibility(uiOptions);
 
-                    // CB-11197 We still need to update LayoutParams to force status bar
-                    // to be hidden when entering e.g. text fields
-                    window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                        // CB-11197 We still need to update LayoutParams to force status bar
+                        // to be hidden when entering e.g. text fields
+                        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    }
                 });
                 return true;
 
@@ -146,10 +163,14 @@ public class StatusBar extends CordovaPlugin {
 
             case ACTION_OVERLAYS_WEB_VIEW:
                 activity.runOnUiThread(() -> {
-                    try {
-                        setStatusBarTransparent(args.getBoolean(0));
-                    } catch (JSONException ignore) {
-                        LOG.e(TAG, "Invalid boolean argument");
+                    if (shouldAvoidLegacyOverlayApi) {
+                        LOG.w(TAG, "Ignoring overlaysWebView on modern Cordova Android status bar handling");
+                    } else {
+                        try {
+                            setStatusBarTransparent(args.getBoolean(0));
+                        } catch (JSONException ignore) {
+                            LOG.e(TAG, "Invalid boolean argument");
+                        }
                     }
                 });
                 return true;
@@ -207,6 +228,15 @@ public class StatusBar extends CordovaPlugin {
                 windowInsetsControllerCompat.setAppearanceLightStatusBars(false);
             } else {
                 LOG.e(TAG, "Invalid style, must be either 'default' or 'lightcontent'");
+            }
+        }
+
+        private boolean isSystemBarPluginAvailable() {
+            try {
+                Class.forName("org.apache.cordova.SystemBarPlugin");
+                return true;
+            } catch (ClassNotFoundException ignore) {
+                return false;
             }
         }
     }
