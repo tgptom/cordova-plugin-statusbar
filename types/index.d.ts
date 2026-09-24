@@ -1,5 +1,5 @@
 // Type definitions for cordova-plugin-statusbar
-// Project: https://github.com/apache/cordova-plugin-statusbar
+// Project: https://github.com/tgptom/cordova-plugin-statusbar
 // Definitions by: Xinkai Chen <https://github.com/Xinkai>
 //                 Tim Brust <https://github.com/timbru31>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
